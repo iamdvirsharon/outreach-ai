@@ -21,6 +21,7 @@ export async function runEnrichment(listId: string): Promise<void> {
 
   const client = getEnrichmentClient(list.provider as EnrichmentProvider)
   let enrichedCount = 0
+  const failedEngagerIds = new Set<string>()
 
   for (let i = 0; i < list.engagers.length; i++) {
     const entry = list.engagers[i]
@@ -69,6 +70,7 @@ export async function runEnrichment(listId: string): Promise<void> {
       }
     } catch (error) {
       console.error(`Enrichment failed for ${engager.name}:`, error)
+      failedEngagerIds.add(engager.id)
       await prisma.enrichmentListEngager.update({
         where: { id: entry.id },
         data: { status: "failed", errorDetail: String(error) },
@@ -94,7 +96,7 @@ export async function runEnrichment(listId: string): Promise<void> {
   const icpExcludeCompanies = icpConfig?.excludeCompanies ? JSON.parse(icpConfig.excludeCompanies) : []
 
   const enrichedEngagerIds = list.engagers
-    .filter((e) => e.status !== "failed")
+    .filter((e) => !failedEngagerIds.has(e.engagerId))
     .map((e) => e.engagerId)
 
   const engagersToRescore = await prisma.engager.findMany({

@@ -117,7 +117,7 @@ export async function GET() {
   const funnel = {
     totalEngagers,
     totalDrafts,
-    exported: totalExported + totalSent + (statusMap["exported"] || 0),
+    exported: totalExported + totalSent,
     sent: totalSent,
     replied: outcomeMap["replied"] || 0,
     connected: outcomeMap["connected"] || 0,

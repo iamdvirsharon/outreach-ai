@@ -66,7 +66,7 @@ export default function EngagersPage() {
 
   async function fetchEngagers() {
     setLoading(true)
-    const params = new URLSearchParams({ page: String(page), limit: "30", enriched: "true" })
+    const params = new URLSearchParams({ page: String(page), limit: "30" })
     if (country) params.set("country", country)
     if (source) params.set("source", source)
     const res = await fetch(`/api/engagers?${params}`)
