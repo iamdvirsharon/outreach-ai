@@ -1,190 +1,174 @@
-# Regional Agent
+# Outreach AI
 
-Turn LinkedIn and YouTube engagement into qualified leads with AI-generated outreach.
+Finds people who engage with your LinkedIn posts and YouTube videos, scores them, enriches their profiles, and writes personalized outreach using Claude AI.
 
----
-
-## What is this?
-
-Regional Agent watches your team's LinkedIn posts and YouTube videos for engagement (likes, comments). When someone interacts with your content, it captures their profile, scores them as a lead, enriches their data (email, title, company), and uses Claude AI to write personalized outreach messages — both LinkedIn DMs and emails.
-
-The end result: a Google Sheet full of scored, enriched leads with ready-to-send messages. Your BDRs just review, tweak if needed, and hit send.
+## What it does
+You add companies and employees you want to monitor. The system scrapes their LinkedIn posts and YouTube videos for engagement. Every person who likes or comments becomes a lead. Each lead gets scored, enriched with email and title data, and gets two AI-written messages, one for LinkedIn DM and one for email. Everything exports to Google Sheets for your sales team.
 
 ## Features
 
-**Lead Discovery**
-- Monitors LinkedIn posts from tracked employees — captures every like and comment
-- Scrapes YouTube video comments for additional lead sources
-- Auto-discovers company employees via Bright Data
+**Discovery**
+- Captures likes and comments from monitored LinkedIn posts
+- Scrapes YouTube video comments for additional leads
+- Auto-discovers employees at target companies via Bright Data
 - Bulk CSV import for employee lists
 
-**Lead Intelligence**
-- Scores leads 0–100 based on seniority, engagement quality, and ICP fit
-- Filters out noise (students, recruiters, competitors) using your ICP rules
-- Enriches profiles with email, verified title, and company data
-- Three enrichment providers: Apollo.io, ZoomInfo, LeadIQ — pick whichever you have
+**Scoring and enrichment**
+- Scores each lead 0 to 100 based on seniority, engagement type, and ICP match
+- Filters out irrelevant profiles like students, recruiters, and competitors
+- Enriches with work email, verified title, and company through Apollo.io, ZoomInfo, or LeadIQ
 
-**AI Outreach**
-- Claude generates two message versions per lead: LinkedIn DM + Email
-- Personalized based on what they actually engaged with
-- Follows your brand voice guidelines
-- BDRs can edit drafts inline before sending
+**AI outreach**
+- Claude writes two message versions per lead, LinkedIn DM and email
+- Each message references the specific post or comment they engaged with
+- Follows your brand voice and tone rules
+- BDRs edit inline before sending
 
-**Sales Ops**
+**Tracking and export**
 - One-click export to Google Sheets
-- Track outcomes: Sent → Replied → Connected
-- Conversion funnel on the dashboard
-- Role-based access (Admin / Viewer)
+- Tracks sent, replied, connected, ignored
+- Dashboard with conversion funnel and daily trends
+- Admin and viewer roles
 
-## Tech Stack
-
-- **Frontend:** Next.js 16, React 19, Tailwind CSS
-- **Backend:** Next.js API Routes, Prisma ORM
-- **Database:** SQLite (local) or Turso (cloud)
-- **AI:** Anthropic Claude API
-- **Data Collection:** Bright Data Web Scraper API
-- **Enrichment:** Apollo.io / ZoomInfo / LeadIQ
-- **Export:** Google Sheets API
+## Tech stack
+- Next.js 16, React 19, Tailwind CSS
+- Prisma ORM with SQLite or Turso
+- Anthropic Claude API
+- Bright Data Web Scraper API
+- Apollo.io, ZoomInfo, LeadIQ
+- Google Sheets API
 
 ---
 
-## Getting Started
+## Setup and usage guide
+This walks you through everything from installing the app to sending your first outreach. No dev background needed.
 
-```bash
+### 1. Install Node.js
+Download and install Node.js from https://nodejs.org. Pick the LTS version. Run the installer with default settings.
+
+To verify it worked, open a terminal and type:
+```
+node --version
+```
+You should see a version number.
+
+### 2. Download the project
+Open a terminal and run:
+```
 git clone https://github.com/iamdvirsharon/outreach-ai.git
 cd outreach-ai
 npm install
 ```
+This downloads the code and installs everything it needs. Takes a few minutes.
 
-Copy the example env file and fill in your keys:
+### 3. Configure your API keys
+In the project folder, find the file called `.env.example`. Make a copy of it and rename the copy to `.env.local`. Open it in any text editor and fill in your keys.
 
-```bash
-cp .env.example .env.local
+The minimum to get the app running:
+```
+DATABASE_URL=file:./data/linkedin-outreach.db
+ADMIN_PASSWORD=pick-a-password
+VIEWER_PASSWORD=pick-another-password
+INTERNAL_API_KEY=any-random-string
+CRON_SECRET=any-random-string
+NEXTAUTH_URL=http://localhost:3000
 ```
 
-Set up the database and start the app:
+To actually scrape and generate outreach, you also need:
+- `BRIGHT_DATA_API_KEY` from your Bright Data dashboard
+- `ANTHROPIC_API_KEY` from console.anthropic.com
+- At least one enrichment provider key, Apollo or ZoomInfo or LeadIQ
 
-```bash
+### 4. Start the app
+Run these two commands in the terminal:
+```
 npx prisma db push
 npm run dev
 ```
+The first command creates your database. The second starts the app. Open your browser and go to http://localhost:3000.
 
-Open http://localhost:3000 and log in with your admin password.
+Log in with whatever you set as `ADMIN_PASSWORD`.
 
-> For local development, set `DATABASE_URL=file:./data/linkedin-outreach.db` in `.env.local` — no cloud database needed.
+### 5. Set up your ICP and brand voice
+Go to **Settings** in the sidebar.
 
----
+Under **Brand voice**, create a profile that tells the AI how to write your outreach. Set your company name, tone guidelines, and rules like "be direct, skip the flattery".
 
-## How to Use (Non-Developer Guide)
+Under **ICP**, define your ideal customer:
+- Target titles like VP, Director, Head of, CTO. These get a scoring boost.
+- Exclude titles like Student, Intern, Recruiter. These get filtered out.
+- Set target countries where your sales team operates.
+- Set a minimum lead score. Only leads above this number get outreach drafts.
 
-Once the app is running, here's how to go from zero to outreach-ready.
+### 6. Add companies to monitor
+Go to **Companies**. Click **Add Company** and paste a LinkedIn company URL.
 
-### Step 1: Log In
+Then add the employees whose posts you want to track:
+- Click the company, then **Add Employee**, and paste their LinkedIn profile URL
+- Or upload a CSV with columns for name, LinkedIn URL, and role
+- Or click **Discover Employees** to let Bright Data find them automatically
 
-Go to http://localhost:3000. Enter the admin password (whatever you set as `ADMIN_PASSWORD` in `.env.local`).
+### 7. Run your first scrape
+On the Companies page, click **Scrape** next to a company. The system will fetch their recent posts, grab every person who engaged, pull their LinkedIn profiles, score them, and generate outreach drafts for the qualified ones.
 
-### Step 2: Configure Settings
+Watch the progress on the **Dashboard**.
 
-Click **Settings** in the sidebar.
+### 8. Add YouTube videos
+Go to **YouTube**. Paste video URLs, one per line. Click **Scrape Comments**. Commenters go through the same scoring and draft pipeline.
 
-**Brand Voice** — Tell the AI how to write. Create a voice profile with your company name, tone guidelines, and do/don't rules. Example: "Be conversational, not salesy. Don't use buzzwords."
+### 9. Enrich your leads
+Go to **Engagers**. Select the leads you want to enrich, click **Enrich**, pick your provider, and name the batch. This finds their work emails and confirms their current titles.
 
-**ICP (Ideal Customer Profile)** — Define who's a good lead and who isn't.
-- *Target titles:* VP, Director, Head of, CTO, etc. (these get a scoring boost)
-- *Exclude titles:* Student, Intern, Recruiter (these get filtered out)
-- *Target countries:* Where your sales team operates
-- *Min score:* Only generate drafts for leads scoring above this number
+### 10. Review and send
+Go to **Outreach Drafts**. Each lead has a LinkedIn DM and an email version ready. Edit if needed, copy to clipboard, and paste into LinkedIn or your email client. Mark outcomes as you go, replied, connected, or ignored.
 
-### Step 3: Add Companies
-
-Click **Companies** in the sidebar. Hit **Add Company**, paste a LinkedIn company URL, and give it a name.
-
-For each company, add the employees whose posts you want to monitor:
-- **Manual:** Click the company → Add Employee → paste their LinkedIn URL
-- **Bulk CSV:** Upload a CSV with columns: Name, LinkedIn URL, Role
-- **Auto-discover:** Click "Discover Employees" to let Bright Data find them
-
-### Step 4: Run a Scrape
-
-On the Companies page, click **Scrape** next to any company. This kicks off the pipeline:
-
-1. Fetches recent posts from the monitored employees
-2. Grabs everyone who liked or commented
-3. Pulls their LinkedIn profiles
-4. Scores each one against your ICP
-5. Generates outreach drafts for qualified leads
-
-You can watch the job progress on the Dashboard.
-
-### Step 5: (Optional) Add YouTube Videos
-
-Click **YouTube** in the sidebar. Paste video URLs — one per line. Hit **Scrape Comments**. The system pulls all commenters and runs them through the same scoring + draft pipeline.
-
-### Step 6: Enrich Leads
-
-Go to **Engagers**. Select the leads you want to enrich (or select all), click **Enrich**, pick a provider (Apollo, ZoomInfo, or LeadIQ), and name the batch. This finds their work emails and verifies titles.
-
-### Step 7: Review Drafts
-
-Click **Outreach Drafts**. Each lead has a LinkedIn DM version and an Email version. You can:
-- **Edit** the message if you want to tweak it
-- **Copy** to clipboard (auto-marks as "Sent")
-- **Track outcomes** — mark as Replied, Connected, or Ignored
-
-### Step 8: Export
-
-Click **Export to Sheets** to push all leads + drafts to your Google Sheet. Share that sheet with your sales team.
+### 11. Export
+Click **Export to Sheets** to push all leads with their enriched data and drafts to your Google Sheet.
 
 ---
 
-## Environment Variables
+## Environment variables
 
-| Variable | Required | What it does |
+| Variable | Required | Description |
 |----------|----------|-------------|
-| `DATABASE_URL` | Yes | Database connection. Use `file:./data/linkedin-outreach.db` for local dev |
-| `TURSO_AUTH_TOKEN` | Only for Turso | Auth token if using Turso cloud database |
-| `ADMIN_PASSWORD` | Yes | Password for full admin access |
-| `VIEWER_PASSWORD` | Yes | Password for read-only access |
-| `INTERNAL_API_KEY` | Yes | Secret for internal API calls between services |
-| `CRON_SECRET` | Yes | Secret for scheduled scrape jobs |
-| `BRIGHT_DATA_API_KEY` | Yes | Get from [Bright Data dashboard](https://brightdata.com) |
-| `BRIGHT_DATA_POSTS_DATASET` | Yes | Dataset ID for LinkedIn posts |
-| `BRIGHT_DATA_COMMENTS_DATASET` | Yes | Dataset ID for LinkedIn comments |
-| `BRIGHT_DATA_PROFILES_DATASET` | Yes | Dataset ID for LinkedIn profiles |
-| `BRIGHT_DATA_LIKERS_DATASET` | No | Enables capturing post likers (5-10x more leads) |
-| `BRIGHT_DATA_COMPANY_DATASET` | No | Enables employee auto-discovery |
-| `BRIGHT_DATA_YOUTUBE_COMMENTS_DATASET` | No | Enables YouTube comment scraping |
-| `APOLLO_API_KEY` | At least one | [Apollo.io](https://apollo.io) enrichment |
-| `ZOOMINFO_CLIENT_ID` | enrichment | [ZoomInfo](https://zoominfo.com) client ID |
-| `ZOOMINFO_PRIVATE_KEY` | provider | ZoomInfo private key |
-| `LEADIQ_API_KEY` | needed | [LeadIQ](https://leadiq.com) enrichment |
-| `ANTHROPIC_API_KEY` | Yes | Get from [Anthropic Console](https://console.anthropic.com) |
-| `CLAUDE_MODEL` | No | Defaults to `claude-sonnet-4-6` |
-| `GOOGLE_SERVICE_ACCOUNT_EMAIL` | For export | Google Cloud service account email |
+| `DATABASE_URL` | Yes | Use `file:./data/linkedin-outreach.db` for local |
+| `TURSO_AUTH_TOKEN` | Cloud DB only | Turso auth token |
+| `ADMIN_PASSWORD` | Yes | Full access password |
+| `VIEWER_PASSWORD` | Yes | Read-only access password |
+| `INTERNAL_API_KEY` | Yes | Internal API secret |
+| `CRON_SECRET` | Yes | Scheduled jobs secret |
+| `BRIGHT_DATA_API_KEY` | Yes | From brightdata.com dashboard |
+| `BRIGHT_DATA_POSTS_DATASET` | Yes | LinkedIn posts dataset ID |
+| `BRIGHT_DATA_COMMENTS_DATASET` | Yes | LinkedIn comments dataset ID |
+| `BRIGHT_DATA_PROFILES_DATASET` | Yes | LinkedIn profiles dataset ID |
+| `BRIGHT_DATA_LIKERS_DATASET` | No | Post likers, 5 to 10x more leads |
+| `BRIGHT_DATA_COMPANY_DATASET` | No | Employee auto-discovery |
+| `BRIGHT_DATA_YOUTUBE_COMMENTS_DATASET` | No | YouTube comment scraping |
+| `APOLLO_API_KEY` | One enrichment | apollo.io |
+| `ZOOMINFO_CLIENT_ID` | provider | zoominfo.com |
+| `ZOOMINFO_PRIVATE_KEY` | required | zoominfo.com |
+| `LEADIQ_API_KEY` | | leadiq.com |
+| `ANTHROPIC_API_KEY` | Yes | From console.anthropic.com |
+| `CLAUDE_MODEL` | No | Defaults to claude-sonnet-4-6 |
+| `GOOGLE_SERVICE_ACCOUNT_EMAIL` | For export | Google Cloud service account |
 | `GOOGLE_SERVICE_ACCOUNT_KEY` | For export | Service account JSON key |
 | `GOOGLE_SHEET_ID` | For export | Target spreadsheet ID |
 
-## How it Works
+## How it works
 
 ```
-LinkedIn Posts & YouTube Videos
-        │
-        ▼
-   Bright Data API ──── scrapes engagements + profiles
-        │
-        ▼
-   Lead Scoring ──────── ICP match, seniority, engagement quality
-        │
-        ▼
-   Enrichment ────────── Apollo / ZoomInfo / LeadIQ (emails, titles)
-        │
-        ▼
-   Claude AI ─────────── Personalized LinkedIn DM + Email drafts
-        │
-        ▼
-   Google Sheets ─────── Export for sales team
+LinkedIn posts + YouTube videos
+        |
+   Bright Data API -- scrapes engagements and profiles
+        |
+   Lead scoring -- ICP match, seniority, engagement quality
+        |
+   Enrichment -- Apollo / ZoomInfo / LeadIQ for emails and titles
+        |
+   Claude AI -- personalized LinkedIn DM + email drafts
+        |
+   Google Sheets -- export for sales team
 ```
 
 ## License
-
 MIT
