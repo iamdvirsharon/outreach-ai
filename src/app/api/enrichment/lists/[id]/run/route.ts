@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
+import { getBaseUrl } from "@/lib/url"
 
 export async function POST(
   _req: NextRequest,
@@ -22,7 +23,7 @@ export async function POST(
   })
 
   // Dispatch to worker
-  const workerUrl = `${process.env.NEXTAUTH_URL || "http://localhost:3000"}/api/enrichment/worker`
+  const workerUrl = `${getBaseUrl()}/api/enrichment/worker`
   fetch(workerUrl, {
     method: "POST",
     headers: {

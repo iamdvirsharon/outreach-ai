@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
+import { getBaseUrl } from "@/lib/url"
 
 // Vercel Cron Jobs hit this endpoint on schedule
 // Configured in vercel.json
@@ -38,11 +39,7 @@ export async function GET(req: NextRequest) {
   }
 
   // Kick off the worker
-  const baseUrl = process.env.NEXTAUTH_URL || process.env.VERCEL_URL
-    ? `https://${process.env.VERCEL_URL}`
-    : "http://localhost:3000"
-
-  fetch(`${baseUrl}/api/scrape/worker`, {
+  fetch(`${getBaseUrl()}/api/scrape/worker`, {
     method: "POST",
     headers: { "x-internal-key": process.env.INTERNAL_API_KEY || "" },
   }).catch(() => {})

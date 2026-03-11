@@ -1,13 +1,11 @@
-import { createClient } from "@libsql/client"
-import { PrismaLibSql } from "@prisma/adapter-libsql"
+import { PrismaPg } from "@prisma/adapter-pg"
 import { PrismaClient } from "@/generated/prisma/client"
 
 function createPrismaClient() {
   const url = process.env.DATABASE_URL
   if (!url) throw new Error("DATABASE_URL is not set")
 
-  const authToken = process.env.TURSO_AUTH_TOKEN
-  const adapter = new PrismaLibSql({ url, authToken })
+  const adapter = new PrismaPg({ connectionString: url })
   return new PrismaClient({ adapter })
 }
 

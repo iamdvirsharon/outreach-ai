@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
+import { getBaseUrl } from "@/lib/url"
 
 function extractVideoId(url: string): string | null {
   const patterns = [
@@ -74,7 +75,7 @@ export async function POST(req: NextRequest) {
 
   // Kick off worker
   if (created.length > 0) {
-    const workerUrl = `${process.env.NEXTAUTH_URL || "http://localhost:3000"}/api/youtube/worker`
+    const workerUrl = `${getBaseUrl()}/api/youtube/worker`
     fetch(workerUrl, {
       method: "POST",
       headers: { "x-internal-key": process.env.INTERNAL_API_KEY || "" },

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
+import { getBaseUrl } from "@/lib/url"
 
 export async function POST(req: NextRequest) {
   const body = await req.json().catch(() => ({}))
@@ -20,7 +21,7 @@ export async function POST(req: NextRequest) {
     })
 
     // Kick off the worker
-    const workerUrl = `${process.env.NEXTAUTH_URL || "http://localhost:3000"}/api/scrape/worker`
+    const workerUrl = `${getBaseUrl()}/api/scrape/worker`
     fetch(workerUrl, {
       method: "POST",
       headers: { "x-internal-key": process.env.INTERNAL_API_KEY || "" },
@@ -44,7 +45,7 @@ export async function POST(req: NextRequest) {
 
   // Kick off the worker
   if (jobs.length > 0) {
-    const workerUrl = `${process.env.NEXTAUTH_URL || "http://localhost:3000"}/api/scrape/worker`
+    const workerUrl = `${getBaseUrl()}/api/scrape/worker`
     fetch(workerUrl, {
       method: "POST",
       headers: { "x-internal-key": process.env.INTERNAL_API_KEY || "" },

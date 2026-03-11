@@ -3,6 +3,7 @@
 // Viewer: can view dashboard, engagers, drafts (read-only)
 
 import { cookies } from "next/headers"
+import { createHmac } from "crypto"
 
 export type UserRole = "admin" | "viewer"
 
@@ -32,15 +33,7 @@ export async function getSession(): Promise<{ role: UserRole } | null> {
 
 export function generateToken(role: UserRole): string {
   const secret = process.env.INTERNAL_API_KEY || "default-secret"
-  // Simple HMAC-like token (not cryptographically strong, but sufficient for internal tool)
-  let hash = 0
-  const str = `${role}:${secret}`
-  for (let i = 0; i < str.length; i++) {
-    const char = str.charCodeAt(i)
-    hash = ((hash << 5) - hash) + char
-    hash = hash & hash // Convert to 32-bit integer
-  }
-  return Math.abs(hash).toString(36)
+  return createHmac("sha256", secret).update(role).digest("hex").slice(0, 32)
 }
 
 export function createSessionValue(role: UserRole): string {

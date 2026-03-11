@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { runScrapeJob } from "@/lib/scrape/engine"
+import { getBaseUrl } from "@/lib/url"
 
 export const maxDuration = 300
 
@@ -60,7 +61,7 @@ export async function POST(req: NextRequest) {
   })
 
   if (nextJob) {
-    const workerUrl = `${process.env.NEXTAUTH_URL || "http://localhost:3000"}/api/scrape/worker`
+    const workerUrl = `${getBaseUrl()}/api/scrape/worker`
     fetch(workerUrl, {
       method: "POST",
       headers: { "x-internal-key": process.env.INTERNAL_API_KEY || "" },
