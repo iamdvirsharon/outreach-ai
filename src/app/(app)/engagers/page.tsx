@@ -52,6 +52,12 @@ interface EngagersResponse {
   countries: { country: string; count: number }[]
 }
 
+interface EnrichProvider {
+  id: string
+  name: string
+  configured: boolean
+}
+
 export default function EngagersPage() {
   const [data, setData] = useState<EngagersResponse | null>(null)
   const [loading, setLoading] = useState(true)
@@ -61,8 +67,20 @@ export default function EngagersPage() {
   const [selected, setSelected] = useState<Set<string>>(new Set())
   const [showEnrichDialog, setShowEnrichDialog] = useState(false)
   const [enrichListName, setEnrichListName] = useState("")
-  const [enrichProvider, setEnrichProvider] = useState("apollo")
+  const [enrichProvider, setEnrichProvider] = useState("")
   const [sending, setSending] = useState(false)
+  const [availableProviders, setAvailableProviders] = useState<EnrichProvider[]>([])
+
+  useEffect(() => {
+    fetch("/api/enrichment/providers")
+      .then((r) => r.json())
+      .then((data) => {
+        const configured = data.providers.filter((p: EnrichProvider) => p.configured)
+        setAvailableProviders(configured)
+        if (configured.length > 0) setEnrichProvider(configured[0].id)
+      })
+      .catch(() => {})
+  }, [])
 
   async function fetchEngagers() {
     setLoading(true)
@@ -105,7 +123,7 @@ export default function EngagersPage() {
     setSending(false)
     setShowEnrichDialog(false)
     setEnrichListName("")
-    setEnrichProvider("apollo")
+    if (availableProviders.length > 0) setEnrichProvider(availableProviders[0].id)
     setSelected(new Set())
   }
 
@@ -185,18 +203,31 @@ export default function EngagersPage() {
               className="w-full px-3 py-2 border rounded-lg text-sm"
               autoFocus
             />
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Provider</label>
-              <select
-                value={enrichProvider}
-                onChange={(e) => setEnrichProvider(e.target.value)}
-                className="w-full px-3 py-2 border rounded-lg text-sm bg-white"
-              >
-                <option value="apollo">Apollo.io</option>
-                <option value="zoominfo">ZoomInfo</option>
-                <option value="leadiq">LeadIQ</option>
-              </select>
-            </div>
+            {availableProviders.length === 0 ? (
+              <div className="bg-amber-50 border border-amber-200 rounded-lg p-3">
+                <p className="text-sm text-amber-800">
+                  No enrichment providers configured. Add an API key (Apollo, ZoomInfo, or LeadIQ) in your environment variables.
+                </p>
+              </div>
+            ) : availableProviders.length === 1 ? (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Provider</label>
+                <p className="text-sm text-gray-900 px-3 py-2 border rounded-lg bg-gray-50">{availableProviders[0].name}</p>
+              </div>
+            ) : (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Provider</label>
+                <select
+                  value={enrichProvider}
+                  onChange={(e) => setEnrichProvider(e.target.value)}
+                  className="w-full px-3 py-2 border rounded-lg text-sm bg-white"
+                >
+                  {availableProviders.map((p) => (
+                    <option key={p.id} value={p.id}>{p.name}</option>
+                  ))}
+                </select>
+              </div>
+            )}
             <div className="flex justify-end gap-2">
               <button
                 onClick={() => setShowEnrichDialog(false)}
@@ -206,7 +237,7 @@ export default function EngagersPage() {
               </button>
               <button
                 onClick={handleEnrich}
-                disabled={!enrichListName.trim() || sending}
+                disabled={!enrichListName.trim() || sending || availableProviders.length === 0}
                 className="px-4 py-2 text-sm text-white bg-purple-600 rounded-lg hover:bg-purple-700 disabled:opacity-50"
               >
                 {sending ? "Creating..." : "Create List"}

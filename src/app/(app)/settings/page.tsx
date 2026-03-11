@@ -25,9 +25,16 @@ interface BrandVoice {
   isDefault: boolean
 }
 
+interface ProviderStatus {
+  id: string
+  name: string
+  configured: boolean
+}
+
 export default function SettingsPage() {
   const [voices, setVoices] = useState<BrandVoice[]>([])
   const [icpConfigs, setIcpConfigs] = useState<ICPConfig[]>([])
+  const [providerStatus, setProviderStatus] = useState<Record<string, boolean>>({})
   const [icpForm, setIcpForm] = useState({
     name: "Default",
     targetTitles: "",
@@ -88,7 +95,18 @@ export default function SettingsPage() {
     fetchIcp()
   }
 
-  useEffect(() => { fetchVoices(); fetchIcp() }, [])
+  useEffect(() => {
+    fetchVoices()
+    fetchIcp()
+    fetch("/api/enrichment/providers")
+      .then((r) => r.json())
+      .then((data) => {
+        const map: Record<string, boolean> = {}
+        data.providers.forEach((p: ProviderStatus) => { map[p.id] = p.configured })
+        setProviderStatus(map)
+      })
+      .catch(() => {})
+  }, [])
 
   async function saveBrandVoice(e: React.FormEvent) {
     e.preventDefault()
@@ -324,10 +342,10 @@ export default function SettingsPage() {
           <ConfigItem label="BRIGHT_DATA_COMPANY_DATASET" description="Optional — enables auto-discover employees" />
           <ConfigItem label="BRIGHT_DATA_YOUTUBE_COMMENTS_DATASET" description="Required for YouTube comment scraping" />
           <ConfigItem label="ANTHROPIC_API_KEY" description="Required for AI draft generation" />
-          <ConfigItem label="APOLLO_API_KEY" description="Apollo.io people enrichment" />
-          <ConfigItem label="ZOOMINFO_CLIENT_ID" description="ZoomInfo enrichment (client ID)" />
-          <ConfigItem label="ZOOMINFO_PRIVATE_KEY" description="ZoomInfo enrichment (private key)" />
-          <ConfigItem label="LEADIQ_API_KEY" description="LeadIQ people enrichment" />
+          <ConfigItem label="APOLLO_API_KEY" description="Apollo.io people enrichment" status={providerStatus.apollo} />
+          <ConfigItem label="ZOOMINFO_CLIENT_ID" description="ZoomInfo enrichment (client ID)" status={providerStatus.zoominfo} />
+          <ConfigItem label="ZOOMINFO_PRIVATE_KEY" description="ZoomInfo enrichment (private key)" status={providerStatus.zoominfo} />
+          <ConfigItem label="LEADIQ_API_KEY" description="LeadIQ people enrichment" status={providerStatus.leadiq} />
           <ConfigItem label="GOOGLE_SERVICE_ACCOUNT_EMAIL" description="Required for Sheets export" />
           <ConfigItem label="GOOGLE_SERVICE_ACCOUNT_KEY" description="Required for Sheets export" />
           <ConfigItem label="GOOGLE_SHEET_ID" description="Target spreadsheet for BDR delivery" />
@@ -340,12 +358,15 @@ export default function SettingsPage() {
   )
 }
 
-function ConfigItem({ label, description }: { label: string; description: string }) {
+function ConfigItem({ label, description, status }: { label: string; description: string; status?: boolean }) {
   return (
     <div className="flex items-center justify-between py-1.5">
-      <div>
+      <div className="flex items-center gap-2">
+        {status !== undefined && (
+          <span className={`inline-block w-2 h-2 rounded-full ${status ? "bg-green-500" : "bg-red-400"}`} />
+        )}
         <code className="text-xs bg-gray-100 px-2 py-0.5 rounded font-mono">{label}</code>
-        <span className="text-xs text-gray-500 ml-2">{description}</span>
+        <span className="text-xs text-gray-500">{description}</span>
       </div>
     </div>
   )

@@ -19,7 +19,26 @@ export async function runEnrichment(listId: string): Promise<void> {
 
   if (!list) throw new Error(`Enrichment list ${listId} not found`)
 
-  const client = getEnrichmentClient(list.provider as EnrichmentProvider)
+  // Pre-flight: check that the provider's API key is actually configured
+  const provider = list.provider as EnrichmentProvider
+  const keyCheck: Record<string, () => boolean> = {
+    apollo: () => !!process.env.APOLLO_API_KEY,
+    zoominfo: () => !!process.env.ZOOMINFO_CLIENT_ID && !!process.env.ZOOMINFO_PRIVATE_KEY,
+    leadiq: () => !!process.env.LEADIQ_API_KEY,
+  }
+
+  if (keyCheck[provider] && !keyCheck[provider]()) {
+    await prisma.enrichmentList.update({
+      where: { id: listId },
+      data: {
+        status: "failed",
+        errorMessage: `API key for ${provider} is not configured. Add the required environment variable and try again.`,
+      },
+    })
+    return
+  }
+
+  const client = getEnrichmentClient(provider)
   let enrichedCount = 0
   const failedEngagerIds = new Set<string>()
 
