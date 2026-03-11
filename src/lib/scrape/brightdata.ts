@@ -92,8 +92,9 @@ async function triggerDataset<T>(datasetId: string, input: unknown[]): Promise<T
     return await pollSnapshot<T>(data.snapshot_id)
   }
 
-  // Direct response
-  return Array.isArray(data) ? data : data.results || []
+  // Direct response — filter out error entries
+  const rawResults = Array.isArray(data) ? data : data.results || []
+  return rawResults.filter((item: Record<string, unknown>) => !item.error)
 }
 
 async function pollSnapshot<T>(snapshotId: string, maxAttempts = 24): Promise<T[]> {
@@ -122,7 +123,9 @@ async function pollSnapshot<T>(snapshotId: string, maxAttempts = 24): Promise<T[
     }
 
     const data = await res.json()
-    return Array.isArray(data) ? data : []
+    const results = Array.isArray(data) ? data : []
+    // Filter out entries that have error fields (dead pages, etc.)
+    return results.filter((item: Record<string, unknown>) => !item.error)
   }
 
   throw new Error(`Snapshot ${snapshotId} timed out after ${maxAttempts} attempts`)
@@ -155,23 +158,74 @@ export async function discoverPosts(
 
 /**
  * Collect comments on a specific LinkedIn post.
+ * Uses the LinkedIn Posts dataset — comments are embedded in the post response
+ * as `top_visible_comments` or similar fields.
  */
 export async function collectPostEngagement(
   postUrl: string
 ): Promise<PostComment[]> {
-  const datasetId = (await getConfigValue("BRIGHT_DATA_COMMENTS_DATASET")) || "gd_s2s1us1i1kj1oydz17"
+  // Use the same LinkedIn Posts dataset — it returns comments embedded in the post data
+  const datasetId = (await getConfigValue("BRIGHT_DATA_POSTS_DATASET")) || "gd_lyy3tktm25m4avu764"
 
-  const rawComments = await triggerDataset<Record<string, unknown>>(datasetId, [
+  const rawPosts = await triggerDataset<Record<string, unknown>>(datasetId, [
     { url: postUrl },
   ])
 
-  return rawComments.map((comment) => ({
-    commenterName: String(comment.commenter_name || comment.author_name || comment.name || "Unknown"),
-    commenterUrl: String(comment.commenter_url || comment.author_url || comment.profile_url || ""),
-    commenterHeadline: comment.commenter_headline ? String(comment.commenter_headline) : comment.headline ? String(comment.headline) : null,
-    commentText: String(comment.comment_text || comment.text || comment.content || ""),
-    timestamp: comment.timestamp ? String(comment.timestamp) : comment.date ? String(comment.date) : null,
-  }))
+  if (rawPosts.length === 0) return []
+
+  const post = rawPosts[0]
+
+  // Extract comments from the post response
+  // BD returns comments in various possible fields
+  const comments: PostComment[] = []
+
+  // Check for top_visible_comments (array of comment objects)
+  const rawComments = (post.top_visible_comments || post.comments_list || post.comments || []) as Record<string, unknown>[]
+  if (Array.isArray(rawComments)) {
+    for (const comment of rawComments) {
+      if (typeof comment === "object" && comment !== null) {
+        comments.push({
+          commenterName: String(comment.commenter_name || comment.author_name || comment.name || comment.author || "Unknown"),
+          commenterUrl: String(comment.commenter_url || comment.author_url || comment.profile_url || comment.author_profile_url || ""),
+          commenterHeadline: comment.commenter_headline ? String(comment.commenter_headline) : comment.headline ? String(comment.headline) : comment.author_headline ? String(comment.author_headline) : null,
+          commentText: String(comment.comment_text || comment.text || comment.content || comment.comment || ""),
+          timestamp: comment.timestamp ? String(comment.timestamp) : comment.date ? String(comment.date) : null,
+        })
+      } else if (typeof comment === "string") {
+        // Sometimes comments are just strings
+        comments.push({
+          commenterName: "Unknown",
+          commenterUrl: "",
+          commenterHeadline: null,
+          commentText: comment,
+          timestamp: null,
+        })
+      }
+    }
+  }
+
+  // Also check for reactions/likers embedded in the post
+  const rawReactions = (post.reactions || post.likers || []) as Record<string, unknown>[]
+  if (Array.isArray(rawReactions)) {
+    for (const reaction of rawReactions) {
+      if (typeof reaction === "object" && reaction !== null) {
+        const name = String(reaction.name || reaction.full_name || reaction.author || "Unknown")
+        const url = String(reaction.profile_url || reaction.url || reaction.author_url || "")
+        if (url && !comments.some(c => c.commenterUrl === url)) {
+          comments.push({
+            commenterName: name,
+            commenterUrl: url,
+            commenterHeadline: reaction.headline ? String(reaction.headline) : null,
+            commentText: `[Reacted to post]`,
+            timestamp: null,
+          })
+        }
+      }
+    }
+  }
+
+  console.log(`collectPostEngagement: found ${comments.length} comments/reactions from post data`)
+  return comments
 }
 
 /**

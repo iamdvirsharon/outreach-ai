@@ -148,7 +148,7 @@ export async function runQuickScrapeJob(jobId: string): Promise<void> {
       data: {
         status: "completed",
         progress: 100,
-        currentStep: "No engagers found on this post. The post may have no public comments.",
+        currentStep: "No engagers found. The post may have no public comments, or the URL may be invalid. Try a different LinkedIn post URL.",
         postsFound: 1,
         engagersFound: 0,
         draftsGenerated: 0,

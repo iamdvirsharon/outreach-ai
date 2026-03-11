@@ -32,8 +32,6 @@ const API_KEY_DEFINITIONS = [
     group: "Advanced (Optional)",
     keys: [
       { key: "BRIGHT_DATA_LIKERS_DATASET", label: "Likers Dataset ID", description: "Custom Bright Data dataset for post likers — leave blank to skip likers" },
-      { key: "BRIGHT_DATA_COMPANY_DATASET", label: "Company Dataset ID", description: "Custom Bright Data dataset for company employee discovery" },
-      { key: "BRIGHT_DATA_YOUTUBE_COMMENTS_DATASET", label: "YouTube Comments Dataset ID", description: "Custom Bright Data dataset for YouTube comment scraping" },
     ],
   },
 ]
